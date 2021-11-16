@@ -1,7 +1,7 @@
 BGC_VAE
 ======
 
-Run:
+Run
 ------
 ```
 python main.py
@@ -10,6 +10,7 @@ python main.py
 Dependencies
 ------
 Anaconda3(64-bit)
+
 PyTorch
 
 Setup Conda Environment
