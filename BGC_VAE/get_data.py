@@ -6,6 +6,9 @@ from pyesgf.search import SearchConnection
 from tqdm import tqdm
 
 def GetData():
+
+    print("getting data")
+
     conn = SearchConnection('https://esgf-node.llnl.gov/esg-search', distrib=True)
 
     # experiment_id: data from 1850 - 2010
