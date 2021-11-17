@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import requests
 
 from pyesgf.search import SearchConnection
 from tqdm import tqdm
@@ -30,6 +31,7 @@ def GetData():
     try:
         results[0].file_context().search()
     except Exception:
+        print("shard exception raised: ignoring")
         pass
 
 
@@ -47,39 +49,47 @@ def GetData():
     files_tas = list(files_tas)
     files_tas = pd.DataFrame.from_dict(files_tas)
 
-    for index, row in files_chl.iterrows():
-        if os.path.isfile(row.filename):
-            print("File exists. Skipping.")
-        else:
-            Download(row.url, row.filename)
+    Download(files_tas.url[0], files_tas.filename[0])
 
-    for index, row in files_pr.iterrows():
-        if os.path.isfile(row.filename):
-            print("File exists. Skipping.")
-        else:
-            Download(row.url, row.filename)
+    # for index, row in files_chl.iterrows():
+    #     if os.path.isfile(row.filename):
+    #         print("File exists. Skipping.")
+    #     else:
+    #         Download(row.url, row.filename)
 
-    for index, row in files_tas.iterrows():
-        if os.path.isfile(row.filename):
-            print("File exists. Skipping.")
-        else:
-            Download(row.url, row.filename)
+    # for index, row in files_pr.iterrows():
+    #     if os.path.isfile(row.filename):
+    #         print("File exists. Skipping.")
+    #     else:
+    #         Download(row.url, row.filename)
+
+    # for index, row in files_tas.iterrows():
+    #     if os.path.isfile(row.filename):
+    #         print("File exists. Skipping.")
+    #     else:
+    #         Download(row.url, row.filename)
 
     print("Done")
 
     # download
 
 def Download(url, filename):
+
+    dir_path = os.path.join(os.getcwd(), 'data')
+    os.makedirs(dir_path, exist_ok=True)
+    os.chdir(dir_path)
+
     print("Downloading ", filename)
     r = requests.get(url, stream=True)
     total_size, block_size = int(r.headers.get('content-length', 0)), 1024
     with open(filename, 'wb') as f:
-        for data in tqdm(r.iter_content(block_size),
+        for i in tqdm(r.iter_content(block_size),
                          total=total_size//block_size,
                          unit='KiB', unit_scale=True):
-            f.write(data)
+            f.write(i)
             
     if total_size != 0 and os.path.getsize(filename) != total_size:
         print("Downloaded size does not match expected size!\n",
               "FYI, the status code was ", r.status_code)
 
+    os.chdir('../')
