@@ -20,8 +20,8 @@ def GetData():
         facets='null', 
         project='CMIP6',
         source_id ='GFDL-ESM4',
-        variable = 'tas,pr,chl',
-        table_id = 'Omon, Amon',
+        variable = 'tos,chl',
+        table_id = 'Omon',
         experiment_id = 'historical')
 
     results = query.search()
@@ -39,20 +39,17 @@ def GetData():
 
 
     hit_chl = results[0].file_context().search()
-    hit_pr = results[1].file_context().search()
-    hit_tas = results[2].file_context().search()
+    hit_tos = results[2].file_context().search()
 
     files_chl = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_chl)
     files_chl = list(files_chl)
     files_chl = pd.DataFrame.from_dict(files_chl)
-    files_pr = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_pr)
-    files_pr = list(files_pr)
-    files_pr = pd.DataFrame.from_dict(files_pr)
-    files_tas = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_tas)
-    files_tas = list(files_tas)
-    files_tas = pd.DataFrame.from_dict(files_tas)
+    files_tos = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_tos)
+    files_tos = list(files_tos)
+    files_tos = pd.DataFrame.from_dict(files_tos)
 
-    Download(files_tas.url[0], files_tas.filename[0])
+    Download(files_tos.url[0], files_tos.filename[0])
+    Download(files_chl.url[0], files_chl.filename[0])
 
     # for index, row in files_chl.iterrows():
     #     if os.path.isfile(row.filename):

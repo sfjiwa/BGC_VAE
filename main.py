@@ -1,4 +1,4 @@
 from BGC_VAE import *
 
-get_data.GetData()
-read_data.ReadData()
+# get_nc_data.GetData()
+write_tensor_data.WriteTrainingData()
