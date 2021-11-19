@@ -8,16 +8,43 @@ from torchvision.io import read_image
 def WriteTrainingData():
     print("reading data")
 
-    x = 'data/tos_Omon_GFDL-ESM4_historical_r1i1p1f1_gr_185001-186912.nc'
-    y = 'data/chl_Omon_GFDL-ESM4_historical_r1i1p1f1_gr_185001-186912.nc'
+    # import x and y data from /data/
 
-    nc_x = Dataset(x)
-    nc_y = Dataset(y)
+    nc_x = 'data/tos_Omon_GFDL-ESM4_historical_r1i1p1f1_gr_185001-186912.nc'
+    nc_y = 'data/chl_Omon_GFDL-ESM4_historical_r1i1p1f1_gr_185001-186912.nc'
+    nc_x = Dataset(nc_x)
+    nc_y = Dataset(nc_y)
 
-    print(nc_y.dimensions)
-    print(nc_y.variables)
+    # x_data dimensions
 
-    # store grid data implicitly [[x1, x2, x3... y1, y2, y3...,t]]
+    n_t = len(nc_x.variables['time'])
+    n_lat = len(nc_x.variables['lat'])
+    n_lon = len(nc_x.variables['lon'])
 
+    # flatten x_data from x_(t, lat, lon) to x_(t, lat*lon)
+
+    x_data = nc_x.variables['tos']
+    x_data = np.array(x_data)
+    x_data = x_data.reshape(n_t, n_lat*n_lon)
+
+    y_data = nc_y.variables['chl']
+    y_data = np.array(y_data)
+
+    # get depth average of y data
+
+    y_depth_avg = np.empty([n_t, n_lat*n_lon])
+
+    for t in range(0, n_t):
+        for lat in range(0, n_lat):
+            for lon in range(0, n_lon):
+                y_depth_avg[t, lat*n_lon + lon] = y_data[t,:,lat,lon].mean()
+
+    # combine x and y data into x_y_data(t, [x_data + y_data])
+
+    x_y_data = np.empty([n_t, 2, n_lat*n_lon])
+
+    for t in range(0, n_t):
+        x_y_data[t, 0] = x_data[t]
+        x_y_data[t, 1] = y_depth_avg[t]
 
     print("done")
