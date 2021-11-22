@@ -5,69 +5,71 @@ import requests
 from pyesgf.search import SearchConnection
 from tqdm import tqdm
 
-def GetData():
+def GetData(var, model='GFDL-ESM4', freq='Omon', exp='historical', grid='gr'):
 
     print("getting data")
 
     conn = SearchConnection('https://esgf-node.llnl.gov/esg-search', distrib=True)
 
     # experiment_id: data from 1850 - 2010
-    # table_id: monthly oceanic and atmospheric data
-    # variable: temperature, precipitation, mass_concentration_of_phytoplankton..., 
+    # table_id: monthly oceanic and atmospheric data 
 
-    query = conn.new_context(
-        latest=True,
-        facets='null', 
-        project='CMIP6',
-        source_id ='GFDL-ESM4',
-        variable = 'tos,chl',
-        table_id = 'Omon',
-        experiment_id = 'historical')
+    for v in range(0, len(var)):
 
-    results = query.search()
+        print('getting results for variable ' + var[v])
 
-    # print("ID: ", results[0].json['id'])
-    # print("Variables: ", results[0].json['variable'])
+        query = conn.new_context(
+            latest=True,
+            facets='null', 
+            project='CMIP6',
+            source_id = model,
+            variable = var[v],
+            table_id = freq,
+            grid_label = grid,
+            experiment_id = exp)
 
-    # Weird exception the first time search() is called, we ignore it
+        # query = conn.new_context(
+        #     latest=True,
+        #     facets='null', 
+        #     project='CMIP6',
+        #     source_id ='GFDL-ESM4',
+        #     variable = 'tos',
+        #     table_id = 'Omon',
+        #     grid_label = 'gr',
+        #     experiment_id = 'historical')
 
-    try:
-        results[0].file_context().search()
-    except Exception:
-        print("shard exception raised: ignoring")
-        pass
+        results = query.search()
 
+        if len(results) == 0:
+            print('no results for variable ' + var[v])
+            continue
 
-    hit_chl = results[0].file_context().search()
-    hit_tos = results[2].file_context().search()
+        # Weird exception the first time search() is called, we ignore it
 
-    files_chl = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_chl)
-    files_chl = list(files_chl)
-    files_chl = pd.DataFrame.from_dict(files_chl)
-    files_tos = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit_tos)
-    files_tos = list(files_tos)
-    files_tos = pd.DataFrame.from_dict(files_tos)
+        one_result = False
 
-    Download(files_tos.url[0], files_tos.filename[0])
-    Download(files_chl.url[0], files_chl.filename[0])
+        try:
+            results[0].file_context().search()
 
-    # for index, row in files_chl.iterrows():
-    #     if os.path.isfile(row.filename):
-    #         print("File exists. Skipping.")
-    #     else:
-    #         Download(row.url, row.filename)
+        except IndexError:
+            one_result = True
 
-    # for index, row in files_pr.iterrows():
-    #     if os.path.isfile(row.filename):
-    #         print("File exists. Skipping.")
-    #     else:
-    #         Download(row.url, row.filename)
+        except Exception:
+            print("shard exception raised: ignoring")
+            pass
 
-    # for index, row in files_tas.iterrows():
-    #     if os.path.isfile(row.filename):
-    #         print("File exists. Skipping.")
-    #     else:
-    #         Download(row.url, row.filename)
+        if not one_result:
+            print('warning: multiple files, selecting the first')
+            hit = results[0].file_context().search()
+
+        else: 
+            hit = results.file_context().search()
+
+        files = map(lambda f : {'filename': f.filename, 'url': f.download_url}, hit)
+        files = list(files)
+        files = pd.DataFrame.from_dict(files)
+
+        Download(files.url[0], files.filename[0])
 
     print("Done")
 
@@ -75,9 +77,15 @@ def GetData():
 
 def Download(url, filename):
 
-    dir_path = os.path.join(os.getcwd(), 'data')
-    os.makedirs(dir_path, exist_ok=True)
-    os.chdir(dir_path)
+    if 'data' not in os.listdir():
+        dir_path = os.path.join(os.getcwd(), 'data')
+        os.makedirs(dir_path, exist_ok=True)
+
+    elif filename in os.listdir('data'):
+        print('file already exists: skipping')
+        return
+
+    os.chdir('data')
 
     print("Downloading ", filename)
     r = requests.get(url, stream=True)
