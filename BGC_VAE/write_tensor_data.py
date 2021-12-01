@@ -32,14 +32,19 @@ def WriteData(training=True):
     for i in range(0, len(filenames)):
 
         # get variable id
-
         var = ''
         for letter in filenames[i]:
             if letter != '_':
                 var += letter
             else: break
 
-        if os.path.exists('data/' + data_type + '/' + var + '.npy'):
+        time_period = ''
+        for letter in range (-17,-4):
+            time_period += filenames[i][letter]
+
+        name = 'data/' + data_type + '/' + var + '_' + time_period + '.npy'
+
+        if os.path.exists(name):
             continue
 
         print()
@@ -78,7 +83,8 @@ def WriteData(training=True):
         data_out = np.transpose(data_out)
 
         print('saving input file')
+        print(filenames[i] + ", " + var)
 
-        np.save('data/' + data_type + '/' + var, data_out)
+        np.save(name, data_out)
 
     print("done")

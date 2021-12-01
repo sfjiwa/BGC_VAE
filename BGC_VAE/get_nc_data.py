@@ -69,7 +69,8 @@ def GetData(var, model='GFDL-ESM4', freq='Omon', exp='historical', grid='gr'):
         files = list(files)
         files = pd.DataFrame.from_dict(files)
 
-        Download(files.url[0], files.filename[0])
+        for f in range(0, len(files)):        
+            Download(files.url[f], files.filename[f])
 
     print("Done")
 
