@@ -12,6 +12,7 @@ class Encoder(nn.Module):#variational encoder
     def __init__(self, latent_dims):
         super().__init__()
         self.net1 = nn.Sequential(
+            nn.BatchNorm2d(1),
             nn.Conv2d(1,1,3,stride=1,padding=1),
             nn.BatchNorm2d(1),
             nn.ReLU(),
@@ -42,6 +43,16 @@ class Encoder(nn.Module):#variational encoder
         return z        
 
 
+class LinearProx(nn.Module):
+    def __init__(self,latent_dims):
+        super().__init__()
+        self.lin = nn.Linear(400,latent_dims)
+    def forward(self,z,y=None):
+        zy = z if y is None else torch.cat((z, y), dim=1)
+        zy = torch.flatten(zy,start_dim=1)
+        zy = self.lin(zy)
+        return zy
+
 
 class Decoder(nn.Module):
     def __init__(self, latent_dims):
@@ -63,33 +74,69 @@ class Decoder(nn.Module):
 
     def forward(self, z, y=None):
         zy = z if y is None else torch.cat((z, y), dim=1)
+
         zy = torch.reshape(self.lin(zy),(1,1,20,20))
         #residual layer
+        
         zy = self.net2(self.net1(zy) + zy)
         return zy
+
 
 class Autoencoder(nn.Module):
     def __init__(self, latent_dims):
         super(Autoencoder, self).__init__()
         self.encoder = Encoder(latent_dims)
         self.decoder = Decoder(latent_dims)
-
     def forward(self, x):
         z = self.encoder(x)
         return self.decoder(z)
+    def latentForward(self,x):
+        return self.encoder(x)
 
-def train(autoencoder, data, epochs=100):
-    opt = torch.optim.Adam(autoencoder.parameters())
+
+class LinearLatent(nn.Module):
+    def __init__(self,latent_dims):
+        super(LinearLatent, self).__init__()
+        self.linearProx = LinearProx(latent_dims)
+        self.decoder = Decoder(latent_dims)
+    def forward(self, x):
+        z = self.linearProx(x)
+        return self.decoder(z)
+    def latentForward(self,x):
+        return self.linearProx(x)
+
+
+def train(autoencoder, linearlatent,data, proxyData,epochs=100):
+    lam = 1 #parameter lambda
+    opt1 = torch.optim.Adam(autoencoder.parameters())
+    opt2 = torch.optim.Adam(linearlatent.parameters())
+    print(epochs)
     for epoch in range(epochs):
-        for x in data:
-            x = x.to(device) # GPU
-            opt.zero_grad()
-            x_hat = autoencoder(x)
-            loss = ((x - x_hat)**2).sum()
-            loss.backward()
-            opt.step()
-    print(loss)
-    print(x_hat[0][0].size())
+        # we train in alternate steps, first fixing h 
+        if(epoch%2==0):
+            for x,y in zip(data,proxyData): #range data to access both
+                x = x.to(device) # GPU
+                y = y.to(device)
+                opt1.zero_grad()
+                x_hat = autoencoder.forward(x)
+                x_lin = linearlatent.forward(y)
+                loss = ((x - x_hat)**2+(x_hat-x_lin)**2).sum()
+                loss.backward()
+                opt1.step()
+            print(loss)
+        else: #in the next step we optimize the linear latent model
+            print('2')
+            for x,y in zip(data,proxyData):
+                x = x.to(device)
+                y = y.to(device)
+                opt2.zero_grad()
+                z = autoencoder.latentForward(x)
+                z_h = linearlatent.latentForward(y)
+                loss = ((z-z_h)**2).sum()
+                loss.backward()
+                opt2.step()
+            print(loss)
+    
     plt.imshow(x[0][0].detach().numpy())
     #idk
     #plt.gca().invert_yaxis()
@@ -100,8 +147,10 @@ def train(autoencoder, data, epochs=100):
     plt.show()
     return autoencoder
 
-latent_dims = 4
-autoencoder = Autoencoder(latent_dims).to(device) # GPU
 
-data = torch.utils.data.DataLoader(torch.load('chloroData.pt'))
-autoencoder = train(autoencoder, data)
+latent_dims = 6
+autoencoder = Autoencoder(latent_dims).to(device) # GPU
+linearlatent = LinearLatent(latent_dims).to(device)
+VAEdata = torch.utils.data.DataLoader(torch.load('chloroData.pt'))
+proxyData = torch.utils.data.DataLoader(torch.load('tempData.pt'))
+model = train(autoencoder, linearlatent, VAEdata, proxyData)

@@ -1,11 +1,16 @@
 import numpy as np
 import torch
 from torch import nn
-
+from scipy import signal
+from matplotlib import pyplot as plt
 #get the data 
 temp_data = np.swapaxes(np.load('tos.npy'),0,1)
 #cmip filtering
 temp_data[temp_data>100000] = 0
+
+#detrend temperature data
+temp_data1 = signal.detrend(temp_data)
+
 print(len(temp_data))
 chlo_data = np.swapaxes(np.load('lev.npy'),0,1)
 chlo_data[chlo_data>=9.999e+19] = 0
@@ -27,3 +32,7 @@ for i in range(0,240):
 torch.save(tD,"tempData.pt")
 torch.save(cD,"chloroData.pt")
 print(cD)
+
+
+#git add . && commit -m "comment"
+#git push
