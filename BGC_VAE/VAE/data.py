@@ -1,8 +1,6 @@
 import numpy as np
 import torch
 from torch import nn
-from codebase import utils as ut
-from codebase.models import nns
 
 #get the data 
 temp_data = np.swapaxes(np.load('tos.npy'),0,1)
@@ -11,7 +9,7 @@ temp_data[temp_data>100000] = 0
 print(len(temp_data))
 chlo_data = np.swapaxes(np.load('lev.npy'),0,1)
 chlo_data[chlo_data>=9.999e+19] = 0
-chlo_data[chlo_data<=0.51]= 0
+#chlo_data[chlo_data<=0.51]= 0
 chlo_data = np.true_divide(chlo_data,1e19)
 cD = torch.empty(240,1,20,20)
 for i in range(0,240):
