@@ -34,5 +34,6 @@ torch.save(cD,"chloroData.pt")
 print(cD)
 
 
-#git add . && commit -m "comment"
+#git add . && git commit -m "comment"
 #git push
+#token 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
