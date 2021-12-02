@@ -1,3 +1,8 @@
+#find data to start working with batch size 1000 
+#beta vae, extreme value
+#SLP baseline test
+#play with the param lambda
+
 import torch; torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,7 +17,6 @@ class Encoder(nn.Module):#variational encoder
     def __init__(self, latent_dims):
         super().__init__()
         self.net1 = nn.Sequential(
-            nn.BatchNorm2d(1),
             nn.Conv2d(1,1,3,stride=1,padding=1),
             nn.BatchNorm2d(1),
             nn.ReLU(),
@@ -106,7 +110,7 @@ class LinearLatent(nn.Module):
         return self.linearProx(x)
 
 
-def train(autoencoder, linearlatent,data, proxyData,epochs=100):
+def train(autoencoder, linearlatent,data, proxyData,epochs=10):
     lam = 1 #parameter lambda
     opt1 = torch.optim.Adam(autoencoder.parameters())
     opt2 = torch.optim.Adam(linearlatent.parameters())
@@ -120,10 +124,10 @@ def train(autoencoder, linearlatent,data, proxyData,epochs=100):
                 opt1.zero_grad()
                 x_hat = autoencoder.forward(x)
                 x_lin = linearlatent.forward(y)
-                loss = ((x - x_hat)**2+(x_hat-x_lin)**2).sum()
-                loss.backward()
+                loss1 = ((x - x_hat)**2+(x_hat-x_lin)**2).sum()
+                loss1.backward()
                 opt1.step()
-            print(loss)
+            print(loss1)
         else: #in the next step we optimize the linear latent model
             print('2')
             for x,y in zip(data,proxyData):
@@ -132,10 +136,10 @@ def train(autoencoder, linearlatent,data, proxyData,epochs=100):
                 opt2.zero_grad()
                 z = autoencoder.latentForward(x)
                 z_h = linearlatent.latentForward(y)
-                loss = ((z-z_h)**2).sum()
-                loss.backward()
+                loss2 = ((z-z_h)**2).sum()
+                loss2.backward()
                 opt2.step()
-            print(loss)
+            print(loss2)
     
     plt.imshow(x[0][0].detach().numpy())
     #idk
@@ -145,10 +149,14 @@ def train(autoencoder, linearlatent,data, proxyData,epochs=100):
     plt.imshow(x_hat[0][0].detach().numpy())
     plt.gca().invert_yaxis()
     plt.show()
+
+    plt.imshow(x_lin[0][0].detach().numpy())
+    plt.gca().invert_yaxis()
+    plt.show()
     return autoencoder
 
 
-latent_dims = 6
+latent_dims = 200
 autoencoder = Autoencoder(latent_dims).to(device) # GPU
 linearlatent = LinearLatent(latent_dims).to(device)
 VAEdata = torch.utils.data.DataLoader(torch.load('chloroData.pt'))

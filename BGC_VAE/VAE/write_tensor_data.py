@@ -58,27 +58,31 @@ def WriteData(training=True):
         
         print('processing variable: ' + var)
 
-    # flatten data to dimensions var x (lat*lon)
-
         data_out = data_set[i].variables[var]
-        data_out = np.array(data_out)
+        data_out = np.array(np.ma.filled(data_out[:], 0))
 
     # average over depth if applicable
 
         for v in data_set[i].variables:
             if v == 'lev':
-                depth_avg = np.empty([n_t, n_lat*n_lon])
+                data_out = np.mean(data_out, axis=1)
+                #     print('averaging over sea column: ', int(100*t/n_t), '%\r', end='')
 
-                for t in range(0, n_t):
-                    print('averaging over sea column: ', int(100*t/n_t), '%\r', end='')
+                #     for lat in range(0, n_lat):
+                #         for lon in range(0, n_lon):
+                #             if (lat == 100 and lon == 100):
+                #                 print(data_out[t,0,lat,lon])
+                #                 print(data_out[t,1,lat,lon])
+                #                 print(data_out[t,2,lat,lon])
+                #                 print(data_out[t,3,lat,lon])
+                #                 print(data_out[t,4,lat,lon])
+                #                 print(data_out[t,:,lat,lon].mean())
+                #                 return
+                #             depth_avg[t, lat*n_lon + lon] = data_out[t,:,lat,lon].mean()
 
-                    for lat in range(0, n_lat):
-                        for lon in range(0, n_lon):
-                            depth_avg[t, lat*n_lon + lon] = data_out[t,:,lat,lon].mean()
-
-                data_out = depth_avg
-                break
-
+                # data_out = depth_avg
+                # break
+                
         data_out = data_out.reshape(n_t, n_lat*n_lon)
         data_out = np.transpose(data_out)
 

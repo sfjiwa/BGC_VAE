@@ -20,7 +20,7 @@ variables = ('tos', 'chl', 'wfo', 'o2')
 get_nc_data.GetData(variables)
 get_nc_data.GetData(('gpp',), freq='Lmon', grid='gr1')
 
-# write_tensor_data.WriteData()
-# plot_variable.Plot('data/training/o2.npy', 100)
-# plot_variable.Plot('data/training/chl.npy', 100)
-# plot_variable.Plot('data/training/lev.npy', 100)
+write_tensor_data.WriteData()
+
+plot_variable.Plot('data/training/chl__185001-18691.npy', 100)
+plot_variable.Plot('data/training/o2__185001-18691.npy', 100)
